@@ -269,7 +269,7 @@ func (pt *peerTaskConductor) register() error {
 	regSpan.End()
 
 	if err != nil {
-		if err == context.DeadlineExceeded {
+		if errors.Is(err, context.DeadlineExceeded) {
 			pt.Errorf("scheduler did not response in %s", pt.SchedulerOption.ScheduleTimeout.Duration)
 		}
 		pt.Errorf("step 1: peer %s register failed: %s", pt.request.PeerId, err)
@@ -747,13 +747,12 @@ loop:
 			pt.Warnf("scheduler client send a peerPacket with empty peers")
 			continue
 		}
-		pt.Infof("receive new peer packet, main peer: %s, parallel count: %d",
-			peerPacket.MainPeer.PeerId, peerPacket.ParallelCount)
+		pt.Infof("receive new peer packet, main peer: %s", peerPacket.MainPeer.PeerId)
 		pt.span.AddEvent("receive new peer packet",
 			trace.WithAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId)))
 
 		if !firstPacketReceived {
-			pt.initDownloadPieceWorkers(peerPacket.ParallelCount, pieceRequestQueue)
+			pt.initDownloadPieceWorkers(pieceRequestQueue)
 			firstPeerSpan.SetAttributes(config.AttributeMainPeer.String(peerPacket.MainPeer.PeerId))
 			firstPeerSpan.End()
 		}
@@ -801,8 +800,7 @@ func (pt *peerTaskConductor) confirmReceivePeerPacketError(err error) (cont bool
 		failedReason string
 	)
 	// extract DfError for grpc status
-	err = dferrors.ConvertGRPCErrorToDfError(err)
-	de, ok := err.(*dferrors.DfError)
+	de, ok := dferrors.IsGRPCDfError(err)
 	if ok {
 		switch de.Code {
 		case commonv1.Code_SchedNeedBackSource:
@@ -952,11 +950,9 @@ func (pt *peerTaskConductor) updateMetadata(piecePacket *commonv1.PiecePacket) {
 	}
 }
 
-func (pt *peerTaskConductor) initDownloadPieceWorkers(count int32, pieceRequestQueue PieceDispatcher) {
-	if count < 1 {
-		count = 4
-	}
-	for i := int32(0); i < count; i++ {
+func (pt *peerTaskConductor) initDownloadPieceWorkers(pieceRequestQueue PieceDispatcher) {
+	count := 4
+	for i := int32(0); i < int32(count); i++ {
 		go pt.downloadPieceWorker(i, pieceRequestQueue)
 	}
 }
