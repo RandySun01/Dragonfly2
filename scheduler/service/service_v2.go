@@ -28,6 +28,7 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
@@ -110,14 +111,16 @@ func (v *V2) AnnouncePeer(stream schedulerv2.Scheduler_AnnouncePeerServer) error
 		switch announcePeerRequest := req.GetRequest().(type) {
 		case *schedulerv2.AnnouncePeerRequest_RegisterPeerRequest:
 			registerPeerRequest := announcePeerRequest.RegisterPeerRequest
-			log.Infof("receive RegisterPeerRequest, url: %s", registerPeerRequest.Download.Url)
+			log.Infof("receive RegisterPeerRequest, url: %s, range: %#v, header: %#v",
+				registerPeerRequest.Download.GetUrl(), registerPeerRequest.Download.GetRange(), registerPeerRequest.Download.GetHeader())
 			if err := v.handleRegisterPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerPeerRequest); err != nil {
 				log.Error(err)
 				return err
 			}
 		case *schedulerv2.AnnouncePeerRequest_RegisterSeedPeerRequest:
 			registerSeedPeerRequest := announcePeerRequest.RegisterSeedPeerRequest
-			log.Infof("receive RegisterSeedPeerRequest, url: %s", registerSeedPeerRequest.Download.Url)
+			log.Infof("receive RegisterSeedPeerRequest, url: %s, range: %#v, header: %#v",
+				registerSeedPeerRequest.Download.GetUrl(), registerSeedPeerRequest.Download.GetRange(), registerSeedPeerRequest.Download.GetHeader())
 			if err := v.handleRegisterSeedPeerRequest(ctx, stream, req.GetHostId(), req.GetTaskId(), req.GetPeerId(), registerSeedPeerRequest); err != nil {
 				log.Error(err)
 				return err
@@ -840,7 +843,7 @@ func (v *V2) handleRegisterPeerRequest(ctx context.Context, stream schedulerv2.S
 	blocklist := set.NewSafeSet[string]()
 	blocklist.Add(peer.ID)
 	if task.FSM.Is(resource.TaskStateFailed) || !task.HasAvailablePeer(blocklist) {
-		if err := v.downloadTaskBySeedPeer(ctx, peer); err != nil {
+		if err := v.downloadTaskBySeedPeer(ctx, req.GetDownload(), peer); err != nil {
 			// Collect RegisterPeerFailureCount metrics.
 			metrics.RegisterPeerFailureCount.WithLabelValues(priority.String(), peer.Task.Type.String(),
 				peer.Task.Tag, peer.Task.Application, peer.Host.Type.Name()).Inc()
@@ -1302,7 +1305,7 @@ func (v *V2) handleResource(ctx context.Context, stream schedulerv2.Scheduler_An
 }
 
 // downloadTaskBySeedPeer downloads task by seed peer.
-func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) error {
+func (v *V2) downloadTaskBySeedPeer(ctx context.Context, download *commonv2.Download, peer *resource.Peer) error {
 	// Trigger the first download task based on different priority levels,
 	// refer to https://github.com/dragonflyoss/api/blob/main/pkg/apis/common/v2/common.proto#L74.
 	priority := peer.CalculatePriority(v.dynconfig)
@@ -1311,12 +1314,15 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL6, commonv2.Priority_LEVEL0:
 		// Super peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, download *commonv2.Download, hostType types.HostType) {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeSuperSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1324,12 +1330,15 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL5:
 		// Strong peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, download *commonv2.Download, hostType types.HostType) {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeStrongSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, download, types.HostTypeSuperSeed)
+
 			break
 		}
 
@@ -1337,12 +1346,15 @@ func (v *V2) downloadTaskBySeedPeer(ctx context.Context, peer *resource.Peer) er
 	case commonv2.Priority_LEVEL4:
 		// Weak peer is first triggered to download back-to-source.
 		if v.config.SeedPeer.Enable && !peer.Task.IsSeedPeerFailed() {
-			go func(ctx context.Context, peer *resource.Peer, hostType types.HostType) {
-				if err := v.resource.SeedPeer().DownloadTask(context.Background(), peer.Task, hostType); err != nil {
-					peer.Log.Errorf("%s seed peer downloads task failed %s", hostType.Name(), err.Error())
+			go func(ctx context.Context, download *commonv2.Download, hostType types.HostType) {
+				if err := v.resource.SeedPeer().TriggerDownloadTask(context.Background(), &dfdaemonv2.TriggerDownloadTaskRequest{Download: download}); err != nil {
+					peer.Log.Errorf("%s seed peer triggers download task failed %s", hostType.Name(), err.Error())
 					return
 				}
-			}(ctx, peer, types.HostTypeWeakSeed)
+
+				peer.Log.Infof("%s seed peer triggers download task success", hostType.Name())
+			}(ctx, download, types.HostTypeSuperSeed)
+
 			break
 		}
 

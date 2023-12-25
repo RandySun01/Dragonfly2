@@ -37,13 +37,13 @@ import (
 	"google.golang.org/protobuf/types/known/timestamppb"
 
 	commonv2 "d7y.io/api/v2/pkg/apis/common/v2"
+	dfdaemonv2 "d7y.io/api/v2/pkg/apis/dfdaemon/v2"
 	managerv2 "d7y.io/api/v2/pkg/apis/manager/v2"
 	schedulerv2 "d7y.io/api/v2/pkg/apis/scheduler/v2"
 	schedulerv2mocks "d7y.io/api/v2/pkg/apis/scheduler/v2/mocks"
 
 	managertypes "d7y.io/dragonfly/v2/manager/types"
 	nethttp "d7y.io/dragonfly/v2/pkg/net/http"
-	"d7y.io/dragonfly/v2/pkg/types"
 	pkgtypes "d7y.io/dragonfly/v2/pkg/types"
 	"d7y.io/dragonfly/v2/scheduler/config"
 	configmocks "d7y.io/dragonfly/v2/scheduler/config/mocks"
@@ -3364,13 +3364,13 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.DownloadTask(gomock.All(), gomock.Any(), types.HostTypeSuperSeed).Do(func(context.Context, *resource.Task, types.HostType) { wg.Done() }).Return(nil).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL6
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.False(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3388,13 +3388,13 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.DownloadTask(gomock.All(), gomock.Any(), types.HostTypeSuperSeed).Do(func(context.Context, *resource.Task, types.HostType) { wg.Done() }).Return(errors.New("foo")).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(errors.New("foo")).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL6
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.False(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3409,7 +3409,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority_LEVEL6
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.True(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3427,13 +3427,13 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.DownloadTask(gomock.All(), gomock.Any(), types.HostTypeStrongSeed).Do(func(context.Context, *resource.Task, types.HostType) { wg.Done() }).Return(nil).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL5
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.False(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3451,13 +3451,13 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.DownloadTask(gomock.All(), gomock.Any(), types.HostTypeStrongSeed).Do(func(context.Context, *resource.Task, types.HostType) { wg.Done() }).Return(errors.New("foo")).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(errors.New("foo")).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL5
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.False(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3472,7 +3472,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority_LEVEL5
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.True(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3490,13 +3490,13 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.DownloadTask(gomock.All(), gomock.Any(), types.HostTypeWeakSeed).Do(func(context.Context, *resource.Task, types.HostType) { wg.Done() }).Return(nil).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(nil).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL4
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.False(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3514,13 +3514,13 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 
 				gomock.InOrder(
 					mr.SeedPeer().Return(seedPeerClient).Times(1),
-					ms.DownloadTask(gomock.All(), gomock.Any(), types.HostTypeWeakSeed).Do(func(context.Context, *resource.Task, types.HostType) { wg.Done() }).Return(errors.New("foo")).Times(1),
+					ms.TriggerDownloadTask(gomock.All(), gomock.Any()).Do(func(context.Context, *dfdaemonv2.TriggerDownloadTaskRequest) { wg.Done() }).Return(errors.New("foo")).Times(1),
 				)
 
 				peer.Priority = commonv2.Priority_LEVEL4
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.False(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3535,7 +3535,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority_LEVEL4
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.True(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3550,7 +3550,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority_LEVEL3
 
 				assert := assert.New(t)
-				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), peer))
+				assert.NoError(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer))
 				assert.True(peer.NeedBackToSource.Load())
 			},
 		},
@@ -3565,7 +3565,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority_LEVEL2
 
 				assert := assert.New(t)
-				assert.ErrorIs(svc.downloadTaskBySeedPeer(context.Background(), peer), status.Errorf(codes.NotFound, "%s peer not found candidate peers", commonv2.Priority_LEVEL2.String()))
+				assert.ErrorIs(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer), status.Errorf(codes.NotFound, "%s peer not found candidate peers", commonv2.Priority_LEVEL2.String()))
 			},
 		},
 		{
@@ -3579,7 +3579,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority_LEVEL1
 
 				assert := assert.New(t)
-				assert.ErrorIs(svc.downloadTaskBySeedPeer(context.Background(), peer), status.Errorf(codes.FailedPrecondition, "%s peer is forbidden", commonv2.Priority_LEVEL1.String()))
+				assert.ErrorIs(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer), status.Errorf(codes.FailedPrecondition, "%s peer is forbidden", commonv2.Priority_LEVEL1.String()))
 			},
 		},
 		{
@@ -3593,7 +3593,7 @@ func TestServiceV2_downloadTaskBySeedPeer(t *testing.T) {
 				peer.Priority = commonv2.Priority(100)
 
 				assert := assert.New(t)
-				assert.ErrorIs(svc.downloadTaskBySeedPeer(context.Background(), peer), status.Errorf(codes.InvalidArgument, "invalid priority %#v", peer.Priority))
+				assert.ErrorIs(svc.downloadTaskBySeedPeer(context.Background(), &commonv2.Download{}, peer), status.Errorf(codes.InvalidArgument, "invalid priority %#v", peer.Priority))
 			},
 		},
 	}

@@ -26,11 +26,11 @@ import (
 	grpc_middleware "github.com/grpc-ecosystem/go-grpc-middleware"
 	grpc_zap "github.com/grpc-ecosystem/go-grpc-middleware/logging/zap"
 	grpc_prometheus "github.com/grpc-ecosystem/go-grpc-prometheus"
+	"go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc"
 	"google.golang.org/grpc"
 	healthpb "google.golang.org/grpc/health/grpc_health_v1"
 
 	logger "d7y.io/dragonfly/v2/internal/dflog"
-	"d7y.io/dragonfly/v2/pkg/rpc"
 )
 
 const (
@@ -44,13 +44,12 @@ func GetClient(ctx context.Context, target string, opts ...grpc.DialOption) (Cli
 		ctx,
 		target,
 		append([]grpc.DialOption{
+			grpc.WithStatsHandler(otelgrpc.NewClientHandler()),
 			grpc.WithUnaryInterceptor(grpc_middleware.ChainUnaryClient(
-				rpc.OTELUnaryClientInterceptor(),
 				grpc_prometheus.UnaryClientInterceptor,
 				grpc_zap.UnaryClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
 			grpc.WithStreamInterceptor(grpc_middleware.ChainStreamClient(
-				rpc.OTELStreamClientInterceptor(),
 				grpc_prometheus.StreamClientInterceptor,
 				grpc_zap.StreamClientInterceptor(logger.GrpcLogger.Desugar()),
 			)),
@@ -77,7 +76,7 @@ func Check(ctx context.Context, target string, opts ...grpc.DialOption) error {
 	}
 	defer healthClient.Close()
 
-	if err := healthClient.Check(ctx, &healthpb.HealthCheckRequest{}); err != nil {
+	if err := healthClient.Check(context.Background(), &healthpb.HealthCheckRequest{}); err != nil {
 		return err
 	}
 
