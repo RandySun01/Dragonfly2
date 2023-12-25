@@ -17,6 +17,8 @@
 package minioprotocol
 
 import (
+	"d7y.io/dragonfly/v2/pkg/source"
+	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 	"errors"
 	"fmt"
 	"github.com/go-http-utils/headers"
@@ -28,9 +30,6 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-
-	"d7y.io/dragonfly/v2/pkg/source"
-	pkgstrings "d7y.io/dragonfly/v2/pkg/strings"
 )
 
 const MINIOClient = "minio"
@@ -107,12 +106,13 @@ func (osc *minioSourceClient) GetContentLength(request *source.Request) (int64, 
 	return objectInfo.Size, nil
 }
 
-func (osc *minioSourceClient) IsSupportRange(request *source.Request) (bool, error) {
+func (msc *minioSourceClient) IsSupportRange(request *source.Request) (bool, error) {
 	fmt.Printf("IsSupportRange get minio bucket info host:%s, path:%s\n", request.URL.Host, request.URL.Path)
+	return false, nil
 	if request.Header.Get(headers.Range) == "" {
 		request.Header.Set(headers.Range, "bytes=0-0")
 	}
-	client, err := osc.getClient(request.Header)
+	client, err := msc.getClient(request.Header)
 
 	if err != nil {
 		return false, fmt.Errorf("get minio client: %w", err)
@@ -132,13 +132,13 @@ func (osc *minioSourceClient) IsSupportRange(request *source.Request) (bool, err
 	return true, nil
 }
 
-func (osc *minioSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
+func (msc *minioSourceClient) GetMetadata(request *source.Request) (*source.Metadata, error) {
 	fmt.Printf("GetMetadata get minio bucket info host:%s, path:%s\n", request.URL.Host, request.URL.Path)
 
 	request = request.Clone(request.Context())
 	request.Header.Set(headers.Range, "bytes=0-0")
 
-	client, err := osc.getClient(request.Header)
+	client, err := msc.getClient(request.Header)
 	if err != nil {
 		return nil, fmt.Errorf("get minio client: %w", err)
 	}
@@ -199,7 +199,7 @@ func (msc *minioSourceClient) IsExpired(request *source.Request, info *source.Ex
 }
 
 func (msc *minioSourceClient) Download(request *source.Request) (*source.Response, error) {
-	fmt.Printf("Download get minio bucket info host:%s, path:%s\n", request.URL.Host, request.URL.Path)
+	fmt.Printf("11111Download get minio bucket info host:%s, path:%s\n", request.URL.Host, request.URL.Path)
 
 	client, err := msc.getClient(request.Header)
 	if err != nil {
@@ -212,8 +212,12 @@ func (msc *minioSourceClient) Download(request *source.Request) (*source.Respons
 	if !exists {
 		return nil, fmt.Errorf("get minio bucket not exists %s: %w", request.URL.Host, err)
 	}
+	//fmt.Println("11111222222222", request.Header)
+	objectOptions := minio.GetObjectOptions{}
+	//fmt.Println("333333333333333444444", request.Header.Get(headers.Range))
+	//objectOptions.Header().Set("Range", request.Header.Get(headers.Range))
 
-	objectResult, err := client.GetObject(request.Context(), request.URL.Host, request.URL.Path, minio.GetObjectOptions{})
+	objectResult, err := client.GetObject(request.Context(), request.URL.Host, request.URL.Path, objectOptions)
 	if err != nil {
 		return nil, fmt.Errorf("get minio Object %s: %w", request.URL.Path, err)
 	}
@@ -229,7 +233,18 @@ func (msc *minioSourceClient) Download(request *source.Request) (*source.Respons
 				ETag:         objectInfo.ETag,
 			},
 		))
-	response.ContentLength = objectInfo.Size
+	//response.ContentLength = objectInfo.Size
+
+	//fmt.Println("response.ContentLength response.ContentLength", response.ContentLength)
+
+	//objectInfo3, err := client.StatObject(request.Context(), request.URL.Host, request.URL.Path, minio.StatObjectOptions{})
+	//if err != nil {
+	//	log.Fatalln(err)
+	//}
+
+	// 获取文件大小
+	//fileSize := objectInfo3.Size
+	//fmt.Println("objectInfo3 objectInfo3 objectInfo3", objectInfo3, fileSize)
 	return response, nil
 }
 
@@ -262,7 +277,7 @@ func (msc *minioSourceClient) List(request *source.Request) (urls []source.URLEn
 
 	client, err := msc.getClient(request.Header)
 	if err != nil {
-		return nil, fmt.Errorf("get oss client: %w", err)
+		return nil, fmt.Errorf("get minio client: %w", err)
 	}
 	exists, err := client.BucketExists(request.Context(), request.URL.Host)
 	if err != nil {
