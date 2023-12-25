@@ -58,7 +58,6 @@ func newMinio(region, endpoint, accessKey, secretKey string, httpClient *http.Cl
 		return nil, fmt.Errorf("new Minio session failed: %s", err)
 	}
 	fmt.Println("minio init minio success", region, endpoint)
-	fmt.Println("minio accessKey, secretKey", accessKey, secretKey)
 	return &Minio{
 		client:   minioClient,
 		region:   region,
@@ -78,8 +77,6 @@ func (m *Minio) GetMetadata(ctx context.Context) *Metadata {
 // GetBucketMetadata returns metadata of bucket.
 func (m *Minio) GetBucketMetadata(ctx context.Context, bucketName string) (*BucketMetadata, error) {
 	_, err := m.client.BucketExists(ctx, bucketName)
-	fmt.Println("minio GetBucketMetadata GetBucketMetadata", err.Error())
-
 	if err != nil {
 		return nil, err
 	}
@@ -92,16 +89,12 @@ func (m *Minio) GetBucketMetadata(ctx context.Context, bucketName string) (*Buck
 func (m *Minio) CreateBucket(ctx context.Context, bucketName string) error {
 
 	err := m.client.MakeBucket(ctx, bucketName, minio.MakeBucketOptions{Region: "us-east-1"})
-	fmt.Println("minio CreateBucket CreateBucket", err.Error())
-
 	return err
 }
 
 // DeleteBucket deletes bucket of object storage.
 func (m *Minio) DeleteBucket(ctx context.Context, bucketName string) error {
 	err := m.client.RemoveBucket(ctx, bucketName)
-	fmt.Println("minio DeleteBucket DeleteBucket", err.Error())
-
 	return err
 }
 
@@ -109,7 +102,6 @@ func (m *Minio) DeleteBucket(ctx context.Context, bucketName string) error {
 func (m *Minio) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, error) {
 	resp, err := m.client.ListBuckets(ctx)
 	if err != nil {
-		fmt.Println("minio ListBucketMetadatas ListBucketMetadatas error", err.Error())
 		return nil, err
 	}
 	var metadatas []*BucketMetadata
@@ -119,8 +111,6 @@ func (m *Minio) ListBucketMetadatas(ctx context.Context) ([]*BucketMetadata, err
 			CreateAt: bucket.CreationDate,
 		})
 	}
-	fmt.Println("minio ListBucketMetadatas ListBucketMetadatas metadatas", metadatas)
-
 	return metadatas, nil
 }
 
@@ -147,7 +137,6 @@ func (m *Minio) GetObjectMetadata(ctx context.Context, bucketName, objectKey str
 
 // GetObjectMetadatas returns the metadatas of the objects.
 func (m *Minio) GetObjectMetadatas(ctx context.Context, bucketName, prefix, marker, delimiter string, limit int64) (*ObjectMetadatas, error) {
-	fmt.Println("minio bucketName, prefix, marker, delimiter ", bucketName, prefix, marker, delimiter, limit)
 
 	opt := minio.ListObjectsOptions{
 		UseV1:      true,
@@ -182,7 +171,6 @@ func (m *Minio) GetOject(ctx context.Context, bucketName, objectKey string) (io.
 	if err != nil {
 		return nil, err
 	}
-
 	return object, nil
 }
 
@@ -199,8 +187,6 @@ func (m *Minio) PutObject(ctx context.Context, bucketName, objectKey, digest str
 		return err
 	}
 	_, err = m.client.PutObject(ctx, bucketName, objectKey, buf, objectSize, opts)
-	fmt.Println("minio PutObject PutObject PutObject", bucketName, objectKey, buf, objectSize, opts, err.Error())
-
 	return err
 }
 
