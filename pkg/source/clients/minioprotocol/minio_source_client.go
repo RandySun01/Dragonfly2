@@ -36,6 +36,7 @@ const MINIOClient = "minio"
 
 const (
 	endpoint        = "endpoint"
+	endpointPort    = "endpointPort"
 	accessKeyID     = "accessKeyID"
 	accessKeySecret = "accessKeySecret"
 	securityToken   = "securityToken"
@@ -199,7 +200,7 @@ func (msc *minioSourceClient) IsExpired(request *source.Request, info *source.Ex
 }
 
 func (msc *minioSourceClient) Download(request *source.Request) (*source.Response, error) {
-	fmt.Printf("11111Download get minio bucket info host:%s, path:%s\n", request.URL.Host, request.URL.Path)
+	fmt.Printf("Download get minio bucket info host:%s, path:%s\n", request.URL.Host, request.URL.Path)
 
 	client, err := msc.getClient(request.Header)
 	if err != nil {
@@ -212,11 +213,9 @@ func (msc *minioSourceClient) Download(request *source.Request) (*source.Respons
 	if !exists {
 		return nil, fmt.Errorf("get minio bucket not exists %s: %w", request.URL.Host, err)
 	}
-	//fmt.Println("11111222222222", request.Header)
 	objectOptions := minio.GetObjectOptions{}
 	//fmt.Println("333333333333333444444", request.Header.Get(headers.Range))
 	//objectOptions.Header().Set("Range", request.Header.Get(headers.Range))
-
 	objectResult, err := client.GetObject(request.Context(), request.URL.Host, request.URL.Path, objectOptions)
 	if err != nil {
 		return nil, fmt.Errorf("get minio Object %s: %w", request.URL.Path, err)
@@ -335,9 +334,15 @@ func (msc *minioSourceClient) isDirectory(client *minio.Client, request *source.
 }
 
 func (msc *minioSourceClient) getClient(header source.Header) (*minio.Client, error) {
+	fmt.Printf("get minio client minio config header:%#v\n", header)
+
 	endpoint := header.Get(endpoint)
 	if pkgstrings.IsBlank(endpoint) {
 		return nil, errors.New("endpoint is empty")
+	}
+	endpointPort := header.Get(endpointPort)
+	if len(endpointPort) > 0 {
+		endpoint = fmt.Sprintf("%s:%s", endpoint, endpointPort)
 	}
 	accessKeyID := header.Get(accessKeyID)
 	if pkgstrings.IsBlank(accessKeyID) {
@@ -352,7 +357,7 @@ func (msc *minioSourceClient) getClient(header source.Header) (*minio.Client, er
 		return minio.New(endpoint,
 			&minio.Options{
 				Creds:  credentials.NewStaticV4(accessKeyID, accessKeySecret, securityToken),
-				Secure: true,
+				Secure: false,
 			})
 	}
 	clientKey := buildClientKey(endpoint, accessKeyID, accessKeySecret)
@@ -360,10 +365,11 @@ func (msc *minioSourceClient) getClient(header source.Header) (*minio.Client, er
 		return client.(*minio.Client), nil
 	}
 
-	client, err := minio.New(endpoint,
+	client, err := minio.New(
+		endpoint,
 		&minio.Options{
 			Creds:  credentials.NewStaticV4(accessKeyID, accessKeySecret, ""),
-			Secure: true,
+			Secure: false,
 		})
 
 	if err != nil {
