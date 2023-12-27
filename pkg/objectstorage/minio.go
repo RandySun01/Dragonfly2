@@ -48,16 +48,15 @@ func newMinio(region, endpoint, accessKey, secretKey string, httpClient *http.Cl
 		endpoint,
 		&minio.Options{
 			Creds:     credentials.NewStaticV4(accessKey, secretKey, ""),
-			Secure:    true,
+			Secure:    false,
 			Region:    region,
 			Transport: httpClient.Transport,
 		},
 	)
-
+	fmt.Println("minio init minio success", region, endpoint)
 	if err != nil {
 		return nil, fmt.Errorf("new Minio session failed: %s", err)
 	}
-	fmt.Println("minio init minio success", region, endpoint)
 	return &Minio{
 		client:   minioClient,
 		region:   region,
