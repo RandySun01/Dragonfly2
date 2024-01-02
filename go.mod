@@ -12,10 +12,11 @@ require (
 	github.com/appleboy/gin-jwt/v2 v2.9.1
 	github.com/aws/aws-sdk-go v1.49.9
 	github.com/bits-and-blooms/bitset v1.10.0
-	github.com/casbin/casbin/v2 v2.77.2
+	github.com/casbin/casbin/v2 v2.81.0
 	github.com/casbin/gorm-adapter/v3 v3.5.0
 	github.com/colinmarc/hdfs/v2 v2.3.0
 	github.com/containerd/containerd v1.6.26
+	github.com/deckarep/golang-set/v2 v2.3.1
 	github.com/distribution/distribution/v3 v3.0.0-20220620080156-3e4f8a0ab147
 	github.com/docker/distribution v2.8.3+incompatible
 	github.com/docker/docker v24.0.7+incompatible
@@ -54,12 +55,12 @@ require (
 	github.com/montanaflynn/stats v0.7.1
 	github.com/onsi/ginkgo/v2 v2.13.2
 	github.com/onsi/gomega v1.30.0
-	github.com/opencontainers/image-spec v1.1.0-rc2.0.20221005185240-3a7f492d3f1b
+	github.com/opencontainers/image-spec v1.1.0-rc5
 	github.com/orcaman/concurrent-map/v2 v2.0.1
 	github.com/phayes/freeport v0.0.0-20220201140144-74d24b5ae9f5
 	github.com/prometheus/client_golang v1.17.0
 	github.com/schollz/progressbar/v3 v3.14.1
-	github.com/shirou/gopsutil/v3 v3.23.10
+	github.com/shirou/gopsutil/v3 v3.23.12
 	github.com/soheilhy/cmux v0.1.5
 	github.com/spf13/cobra v1.7.0
 	github.com/spf13/viper v1.15.0
@@ -105,7 +106,6 @@ require (
 	cloud.google.com/go/iam v1.1.5 // indirect
 	cloud.google.com/go/pubsub v1.33.0 // indirect
 	github.com/Azure/go-ansiterm v0.0.0-20210617225240-d185dfc1b5a1 // indirect
-	github.com/Knetic/govaluate v3.0.1-0.20171022003610-9aa49832a739+incompatible // indirect
 	github.com/KyleBanks/depth v1.2.1 // indirect
 	github.com/Microsoft/hcsshim v0.9.10 // indirect
 	github.com/RichardKnop/logging v0.0.0-20190827224416-1a693bdd4fae // indirect
@@ -113,6 +113,7 @@ require (
 	github.com/blang/semver/v4 v4.0.0 // indirect
 	github.com/bradfitz/gomemcache v0.0.0-20220106215444-fb4bf637b56d // indirect
 	github.com/bytedance/sonic v1.10.0 // indirect
+	github.com/casbin/govaluate v1.1.0 // indirect
 	github.com/cespare/xxhash/v2 v2.2.0 // indirect
 	github.com/chenzhuoyu/base64x v0.0.0-20230717121745-296ad89f973d // indirect
 	github.com/chenzhuoyu/iasm v0.9.0 // indirect
@@ -215,8 +216,6 @@ require (
 	github.com/streadway/amqp v1.0.0 // indirect
 	github.com/subosito/gotenv v1.4.2 // indirect
 	github.com/tidwall/gjson v1.14.4 // indirect
-	github.com/tidwall/match v1.1.1 // indirect
-	github.com/tidwall/pretty v1.2.0 // indirect
 	github.com/tklauser/go-sysconf v0.3.12 // indirect
 	github.com/tklauser/numcpus v0.6.1 // indirect
 	github.com/twitchyliquid64/golang-asm v0.15.1 // indirect
