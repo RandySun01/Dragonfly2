@@ -693,7 +693,7 @@ func (cd *clientDaemon) Serve() error {
 	go func() {
 		logger.Info("serve announcer")
 		if err := cd.announcer.Serve(); err != nil {
-			logger.Fatalf("failed to serve for announcer: %v", err)
+			logger.Info("failed to serve for announcer: %v", err)
 		}
 	}()
 
