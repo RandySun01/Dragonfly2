@@ -209,6 +209,8 @@ func New(name, region, endpoint, accessKey, secretKey string, options ...Option)
 		return newOSS(o.region, o.endpoint, o.accessKey, o.secretKey, o.httpClient)
 	case ServiceNameOBS:
 		return newOBS(o.region, o.endpoint, o.accessKey, o.secretKey, o.httpClient)
+	case ServiceNameMinio:
+		return newMinio(region, o.endpoint, o.accessKey, o.secretKey, o.httpClient)
 	}
 
 	return nil, fmt.Errorf("unknow service name %s", name)

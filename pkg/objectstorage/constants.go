@@ -27,6 +27,9 @@ const (
 
 	// ServiceNameOBS is name of obs storage.
 	ServiceNameOBS = "obs"
+
+	// ServiceNameMinio is name of minio storage.
+	ServiceNameMinio = "minio"
 )
 
 const (
